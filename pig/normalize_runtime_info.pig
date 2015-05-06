@@ -1,5 +1,8 @@
+%default INPUTFILE 'output/part-r-00000'
+%default OUTFOLDER '.'
 
-runtime = LOAD 'output/part-r-00000' as (src_type:chararray, src_id:chararray, dest_type:chararray, dest_id:chararray, wo:int, event:int, ne:int, discjs:int, discpolicy:int, discfilter:int);
+
+runtime = LOAD '$INPUTFILE' as (src_type:chararray, src_id:chararray, dest_type:chararray, dest_id:chararray, wo:int, event:int, ne:int, discjs:int, discpolicy:int, discfilter:int);
 
 /*Calculate all the maximium values for each count*/
 B = GROUP runtime all;
@@ -50,14 +53,14 @@ k = JOIN activity by (act_so_id,act_stream), popularity by (src_id,src_stream);
 service object data
 */
 mix = FOREACH k GENERATE  CONCAT(CONCAT(src_id,'-'),src_stream) as id, 'service_object_stream' as type,'runtime' as runtime,  popularity as popularity, activity as activity;
-store mix INTO 'stream_popularity_and_activity';
+store mix INTO '$OUTFOLDER/stream_popularity_and_activity';
 
 groupped_by_so_id = GROUP k BY src_id;
 
 /*so_total =  FOREACH groupped_by_so_id GENERATE group, SUM($1.activity) as tot_activity:long,SUM($1.popularity) as tot_popularity:long,  COUNT($1) as count:long;*/
 
 so_total =  FOREACH groupped_by_so_id GENERATE group, 'service_object' as type, 'runtime' as runtime, SUM($1.popularity)/COUNT($1) as tot_popularity:long,SUM($1.activity)/COUNT($1) as tot_activity:long;
-store so_total INTO 'so_popularity_and_activity';
+store so_total INTO '$OUTFOLDER/so_popularity_and_activity';
 
 
 /*

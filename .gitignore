@@ -2,3 +2,5 @@ sqoop/DUMP/*
 sqoop/runtime_input.txt
 *~
 sqoop/data/*
+*.log
+sqoop/*.jar

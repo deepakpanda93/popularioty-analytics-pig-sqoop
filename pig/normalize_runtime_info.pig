@@ -1,4 +1,4 @@
-%default INPUTFILE 'output/part-r-00000'
+%default INPUTFILE 'mr_both_combined.txt'
 %default OUTFOLDER '.'
 
 
@@ -42,17 +42,21 @@ activity = FOREACH f GENERATE src_id as act_so_id: chararray, src_stream as act_
 					)/3 as activity:float;
 
 
-h = JOIN g  by (dest_wo_id, dest_wo_stream), internal_so by (src_id, src_stream);
+h = JOIN g  by (dest_wo_id, dest_wo_stream) FULL, internal_so by (src_id, src_stream);
 
 /* Normalize the data according to the SO producing the MAximium amount of updates per category, then web object updates, and events are weighted with twice the value assigned to non events...*/
-popularity = FOREACH h GENERATE src_id , src_stream , (((20*wo_wo/two))+((20*event/tevent))+((10*ne/tne)))/5 as popularity;
+popularity = FOREACH h GENERATE (src_id is null?dest_wo_id:src_id) as src_id , (src_stream is null? dest_wo_stream: src_stream) as src_stream, 
+					(  
+						((20*wo_wo/two) is null? 0: (20*wo_wo/two))  +  ((20*event/tevent) is null? 0: (20*event/tevent) )  +  ( (10*ne/tne) is null? 0: (10*ne/tne) )
+					)/5 as popularity;
 
 
-k = JOIN activity by (act_so_id,act_stream), popularity by (src_id,src_stream);
+k = JOIN activity by (act_so_id,act_stream) FULL, popularity by (src_id,src_stream);
 /*
+ Here... it is ok to rely on the key src_id, and src_stream from now on in spite of the outer join, because if there is activity, there needs to be popularity!
 service object data
 */
-mix = FOREACH k GENERATE  CONCAT(CONCAT(src_id,'-'),src_stream) as id, 'service_object_stream' as type,'runtime' as runtime,  popularity as popularity, activity as activity;
+mix = FOREACH k GENERATE  CONCAT(CONCAT(src_id,'#!'),src_stream) as id, 'service_object_stream' as type,'runtime' as runtime,  (popularity is null?0:popularity) as popularity, (activity is null? 0: activity) as activity;
 store mix INTO '$OUTFOLDER/stream_popularity_and_activity';
 
 groupped_by_so_id = GROUP k BY src_id;

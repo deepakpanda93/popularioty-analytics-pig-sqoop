@@ -1,6 +1,6 @@
 #/bin/bash
 
-source ../env.sh
+#source ../env.sh
 
 hadoop fs -rm -r DUMP
 sqoop import --username reputation --verbose \
@@ -9,7 +9,7 @@ hadoop fs -getmerge  DUMP/ data/runtime_input.txt
 
 if [ -d "$1"  ]
   then "moving dump of runtime to "$1
-  haddop fs -mv data/runtime_input.txt $1/
+  hadoop fs -mv data/runtime_input.txt $1/import_runtime.txt
 fi
 
 hadoop fs -rm -r DUMP

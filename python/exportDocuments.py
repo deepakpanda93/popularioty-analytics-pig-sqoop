@@ -5,6 +5,8 @@ import json
 import sys
 
 
+
+
 if len(sys.argv)==4:
   file = sys.argv[1]
   host = sys.argv[2]
@@ -12,6 +14,9 @@ if len(sys.argv)==4:
 else:
   print "usage: "+sys.argv[0]+" source_file host bucket"
   exit(1)
+
+print "Attempting to connect to:"+host+" and bucket: "+bucket
+
 c = Couchbase.connect(bucket=bucket, host=host)
 
   

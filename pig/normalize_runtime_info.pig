@@ -59,12 +59,15 @@ service object data
 mix = FOREACH k GENERATE  CONCAT(CONCAT(src_id,'#!'),src_stream) as id, 'service_object_stream' as type,'runtime' as runtime,  (popularity is null?0:popularity) as popularity, (activity is null? 0: activity) as activity;
 store mix INTO '$OUTFOLDER/stream_popularity_and_activity';
 
-groupped_by_so_id = GROUP k BY src_id;
 
-/*so_total =  FOREACH groupped_by_so_id GENERATE group, SUM($1.activity) as tot_activity:long,SUM($1.popularity) as tot_popularity:long,  COUNT($1) as count:long;*/
+k_no_null = FOREACH k generate (activity is null? 0 : activity) as activity,src_id ,src_stream, (popularity is null? 0 : popularity) as popularity;
 
-so_total =  FOREACH groupped_by_so_id GENERATE group, 'service_object' as type, 'runtime' as runtime, SUM($1.popularity)/COUNT($1) as tot_popularity:long,SUM($1.activity)/COUNT($1) as tot_activity:long;
+groupped_by_so_id = GROUP k_no_null BY src_id;
+
+
+so_total =  FOREACH groupped_by_so_id GENERATE group, 'service_object' as type, 'runtime' as runtime, SUM(k_no_null.popularity)/COUNT(k_no_null) as tot_popularity:long,SUM(k_no_null.activity)/COUNT(k_no_null) as tot_activity:long;
 store so_total INTO '$OUTFOLDER/so_popularity_and_activity';
+
 
 
 /*
